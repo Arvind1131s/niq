@@ -1,0 +1,85 @@
+package com.example.api.service.impl;
+
+import com.example.api.dto.ProductRequestDTO;
+import com.example.api.dto.ShopperRequestDTO;
+import com.example.api.dto.ShopperProductDTO;
+import com.example.api.dto.ShopperProductResponseDTO;
+import com.example.api.exception.ResourceNotFoundException;
+import com.example.api.model.Product;
+import com.example.api.model.Shopper;
+import com.example.api.model.ShopperProduct;
+import com.example.api.repository.ProductRepository;
+import com.example.api.repository.ShopperProductRepository;
+import com.example.api.repository.ShopperRepository;
+import com.example.api.service.ShopperService;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class PersonalisedDataServiceImpl implements ShopperService {
+
+    private final ShopperRepository shopperRepository;
+    private final ShopperProductRepository shopperProductRepository;
+    private final ProductRepository productRepository;
+
+    public ShopperServiceImpl(ShopperRepository shopperRepository, 
+                              ShopperProductRepository shopperProductRepository,
+                              ProductRepository productRepository) {
+        this.shopperRepository = shopperRepository;
+        this.shopperProductRepository = shopperProductRepository;
+        this.productRepository = productRepository;
+    }
+
+    @Override
+    public void saveShopperData(ShopperRequestDTO shopperRequestDTO) {
+        Shopper shopper = new Shopper();
+        shopper.setShopperId(shopperRequestDTO.getShopperId());
+
+        List<ShopperProduct> shopperProducts = shopperRequestDTO.getShelf().stream().map(dto -> {
+            ShopperProduct shopperProduct = new ShopperProduct();
+            Product product = productRepository.findById(dto.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + dto.getProductId()));
+            shopperProduct.setShopper(shopper);
+            shopperProduct.setProduct(product);
+            shopperProduct.setRelevancyScore(dto.getRelevancyScore());
+            return shopperProduct;
+        }).collect(Collectors.toList());
+
+        shopper.setShelf(shopperProducts);
+        shopperRepository.save(shopper);
+    }
+
+    @Override
+    public void saveProduct(ProductRequestDTO productRequestDTO) {
+        Product product = new Product();
+        product.setProductId(productRequestDTO.getProductId());
+        product.setCategory(productRequestDTO.getCategory());
+        product.setBrand(productRequestDTO.getBrand());
+
+        productRepository.save(product);
+    }
+
+    @Override
+    public List<ShopperProductResponseDTO> getShopperProducts(String shopperId, String category, String brand, int limit) {
+        List<ShopperProduct> shopperProducts;
+
+        if (category != null) {
+            shopperProducts = shopperProductRepository.findByShopperShopperIdAndProductCategory(shopperId, category);
+        } else if (brand != null) {
+            shopperProducts = shopperProductRepository.findByShopperShopperIdAndProductBrand(shopperId, brand);
+        } else {
+            shopperProducts = shopperProductRepository.findByShopperShopperId(shopperId);
+        }
+
+        return shopperProducts.stream().limit(limit).map(sp -> {
+            ShopperProductResponseDTO responseDTO = new ShopperProductResponseDTO();
+            responseDTO.setProductId(sp.getProduct().getProductId());
+            responseDTO.setCategory(sp.getProduct().getCategory());
+            responseDTO.setBrand(sp.getProduct().getBrand());
+            responseDTO.setRelevancyScore(sp.getRelevancyScore());
+            return responseDTO;
+        }).collect(Collectors.toList());
+    }
+}

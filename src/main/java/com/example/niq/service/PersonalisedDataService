@@ -1,0 +1,13 @@
+package com.example.api.service;
+
+import com.example.api.dto.ProductRequestDTO;
+import com.example.api.dto.ShopperRequestDTO;
+import com.example.api.dto.ShopperProductResponseDTO;
+
+import java.util.List;
+
+public interface PersonalisedDataService {
+    void saveShopperData(ShopperRequestDTO shopperRequestDTO);
+    void saveProduct(ProductRequestDTO productRequestDTO);
+    List<ShopperProductResponseDTO> getShopperProducts(String shopperId, String category, String brand, int limit);
+}
