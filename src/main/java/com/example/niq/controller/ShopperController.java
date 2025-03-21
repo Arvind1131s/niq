@@ -2,6 +2,7 @@ package com.example.niq.controller;
 
 import com.example.niq.dto.ShopperRequestDTO;
 import com.example.niq.dto.ShopperProductDTO;
+import com.example.niq.dto.ProductDTO;
 import com.example.niq.service.PersonalisedDataService;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,11 @@ public class ShopperController {
         shopperService.saveShopperData(shopperRequestDTO);
         return "Shopper data saved successfully!";
     }
-
+    @PostMapping("/internal/products")
+    public String saveProduct(@RequestBody ProductDTO productDTO) {
+        shopperService.saveProduct(productDTO);
+        return "Product metadata saved successfully!";
+    }
     @GetMapping("/products")
     public List<ShopperProductDTO> getShopperProducts(
             @RequestParam String shopperId,
